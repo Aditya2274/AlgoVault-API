@@ -28,6 +28,9 @@ ENV PORT=3000
 COPY package*.json ./
 RUN npm ci --omit=dev
 
+# Install Python 3 for embedded Python execution
+RUN apk add --no-cache python3
+
 # Copy generated Prisma Client and built JavaScript
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma

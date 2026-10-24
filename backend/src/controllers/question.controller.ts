@@ -107,6 +107,86 @@ export class QuestionController {
       next(error);
     }
   }
+
+  async addTestCase(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const testCase = await questionService.addTestCase(id as string, req.body);
+      if (!testCase) {
+        res.status(404).json({
+          status: 'error',
+          message: `Question with ID '${id}' not found`,
+        });
+        return;
+      }
+      res.status(201).json({
+        status: 'success',
+        data: testCase,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async addTestCasesBulk(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const testCases = await questionService.addTestCasesBulk(id as string, req.body.testCases);
+      if (!testCases) {
+        res.status(404).json({
+          status: 'error',
+          message: `Question with ID '${id}' not found`,
+        });
+        return;
+      }
+      res.status(201).json({
+        status: 'success',
+        data: testCases,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getTestCases(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id } = req.params;
+      const testCases = await questionService.getTestCases(id as string);
+      if (!testCases) {
+        res.status(404).json({
+          status: 'error',
+          message: `Question with ID '${id}' not found`,
+        });
+        return;
+      }
+      res.status(200).json({
+        status: 'success',
+        data: testCases,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteTestCase(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id, testCaseId } = req.params;
+      const deleted = await questionService.deleteTestCase(id as string, testCaseId as string);
+      if (!deleted) {
+        res.status(404).json({
+          status: 'error',
+          message: `TestCase with ID '${testCaseId}' not found for question '${id}'`,
+        });
+        return;
+      }
+      res.status(200).json({
+        status: 'success',
+        message: 'Test case deleted successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const questionController = new QuestionController();

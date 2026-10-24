@@ -12,6 +12,15 @@ AlgoVault is a strongly-typed, full-stack developer preparation platform designe
 
 The project is structured with strict separation of concerns into a dedicated backend API service (`/backend`) and a modern React frontend Single Page Application (`/client`), fully containerized and orchestrated via Docker Compose.
 
+### Features
+- 📋 **Problem Library** — paginated, searchable, difficulty-filtered question list with tag categorization
+- 🖥️ **Monaco Code Editor** — in-browser editor with syntax highlighting for JavaScript, TypeScript, and Python 3
+- ⚡ **Embedded Execution Engine** — sandboxed subprocess runner with 3.5s timeout, 128 MB memory cap, TypeScript in-memory transpilation, and batch test case evaluation
+- 🧪 **Test Case Verification** — per-case pass/fail with input / expected / actual diff, runtime metrics, and stdout/stderr console
+- 📝 **Dynamic Starter Templates** — auto-generated function stubs derived from question titles and test case input shapes; no manual template maintenance needed
+- 🔒 **Type-Safe API** — strict TypeScript + Zod 3 validation across all endpoints
+- 🐳 **Fully Containerized** — single `docker compose up -d` spins up PostgreSQL, Express API, and React frontend
+
 ---
 
 ## Architecture Overview
@@ -19,10 +28,11 @@ The project is structured with strict separation of concerns into a dedicated ba
 ```mermaid
 graph TD
     User["🌐 User / Browser"] -->|Port 5173| ClientContainer["📦 Client Container (Nginx Alpine)"]
-    ClientContainer -->|Static Files| ReactApp["⚛️ React 19 + Vite + Tailwind"]
+    ClientContainer -->|Static Files| ReactApp["⚛️ React 19 + Monaco Editor + Tailwind"]
     ClientContainer -->|Proxy /api/*| BackendContainer["📦 Backend Container (Node 20 Alpine)"]
     User -->|Direct API Port 3000| BackendContainer
     BackendContainer -->|Express 5 + Prisma 7| APIApp["🚀 AlgoVault REST API"]
+    BackendContainer -->|Subprocess| ExecEngine["⚙️ Embedded Execution Engine (Node.js / Python 3)"]
     BackendContainer -->|TCP 5432| DBContainer["📦 Database Container (PostgreSQL 16)"]
     DBContainer -->|Persist Data| DBVolume[("💾 postgres_data Volume")]
 ```
@@ -40,9 +50,14 @@ devprep-api/
 │   ├── .env                  # Local environment (git-ignored)
 │   └── .env.example
 ├── client/                   # React 19 + Vite + Tailwind CSS v4 Single Page App
-│   ├── src/                  # Problem dashboard, test case viewer, type contracts
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── CodeWorkspace.tsx  # Monaco editor, test runner, results console
+│   │   ├── App.tsx           # Problem list, filters, detail panel
+│   │   ├── types.ts          # Shared TypeScript contracts (Question, ExecutionResponse…)
+│   │   └── index.css         # Tailwind v4 @theme tokens & global styles
 │   ├── public/
-│   ├── Dockerfile            # Multi-stage production container (Node build -> Nginx Alpine)
+│   ├── Dockerfile            # Multi-stage production container (Node build → Nginx Alpine)
 │   ├── nginx.conf            # SPA routing + /api reverse proxy to backend
 │   ├── .dockerignore
 │   ├── package.json
@@ -59,8 +74,9 @@ devprep-api/
 ## Tech Stack
 
 - **Backend:** Node.js, Express 5, TypeScript, PostgreSQL, Prisma ORM 7 with PostgreSQL Driver Adapter, Zod 3
-- **Frontend:** React 19, Vite, TypeScript, Tailwind CSS v4, Lucide Icons
+- **Frontend:** React 19, Vite, TypeScript, Tailwind CSS v4, Lucide Icons, Monaco Editor (`@monaco-editor/react`)
 - **Infrastructure:** Docker, Docker Compose, Nginx (Alpine)
+- **Execution Engine:** Native sandboxed subprocesses (Node.js + Python 3) with timeout & memory caps — no external API required
 
 ---
 
@@ -78,12 +94,12 @@ docker compose up -d
 | :--- | :--- | :--- | :--- |
 | **`client`** | `80` | `5173` | React 19 Frontend SPA served by Nginx with reverse proxy to `/api` |
 | **`backend`** | `3000` | `3000` | AlgoVault Express 5 REST API |
-| **`db`** | `5432` | `5432` | PostgreSQL 16 Alpine with persistent storage volume |
+| **`db`** | `5432` | `5433` | PostgreSQL 16 Alpine with persistent storage volume |
 
 Once running:
 - **Frontend Dashboard:** [http://localhost:5173](http://localhost:5173)
 - **Backend API Health Check:** [http://localhost:3000/api/health](http://localhost:3000/api/health)
-- **PostgreSQL Database:** `localhost:5432`
+- **PostgreSQL Database:** `localhost:5433`
 
 ### Helpful Docker Commands
 
@@ -288,9 +304,70 @@ All API routes are prefixed under `/api`.
 
 ---
 
+### 7. Get Starter Code Templates
+* **Endpoint:** `GET /api/execute/templates/:questionId`
+* **Response (200 OK):**
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "functionName": "twoSum",
+      "javascript": "function twoSum(nums, target) {\n  // Write your code here\n  \n}",
+      "typescript": "function twoSum(nums: number[], target: number): number[] {\n  // Write your code here\n  return [];\n}",
+      "python": "def twoSum(nums, target):\n    # Write your code here\n    pass\n"
+    }
+  }
+  ```
+
+### 8. Execute Code Against Test Cases
+* **Endpoint:** `POST /api/execute`
+* **Headers:** `Content-Type: application/json`
+* **Body:**
+  ```json
+  {
+    "questionId": "1154288c-9777-4b4f-841b-2403f6acb4ec",
+    "language": "javascript",
+    "code": "function twoSum(nums, target) { ... }",
+    "customInput": "nums = [1, 5, 9], target = 6"
+  }
+  ```
+  > `customInput` is optional — omit it to run all stored test cases.
+* **Response (200 OK):**
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "summary": {
+        "total": 2,
+        "passed": 2,
+        "failed": 0,
+        "allPassed": true,
+        "totalRuntimeMs": 8,
+        "status": "Accepted",
+        "stdout": "",
+        "stderr": ""
+      },
+      "results": [
+        {
+          "testCaseId": "b01e5ace-...",
+          "input": "nums = [2,7,11,15], target = 9",
+          "expectedOutput": "[0,1]",
+          "actualOutput": "[0,1]",
+          "passed": true,
+          "runtimeMs": 4,
+          "error": null
+        }
+      ]
+    }
+  }
+  ```
+
+---
+
 ## Roadmap
 
 - [x] **Phase 1:** Modular Architecture, Question CRUD, Zod Validation, Singleton Prisma Driver Adapter.
 - [x] **Phase 2:** Decoupled Architecture (`/backend` & `/client`), React 19 Frontend Dashboard, Tailwind CSS v4, Multi-stage Dockerfiles, Docker Compose Orchestration.
-- [ ] **Phase 3 (Active):** Cloud Deployment (Neon/Supabase DB, Render API, Vercel Client).
-- [ ] **Phase 4:** In-Browser Code Execution (Monaco Editor + Piston API Integration).
+- [x] **Phase 3:** Monaco Editor in-browser code workspace, dynamic starter-code generator, native sandboxed subprocess execution engine (JS/TS/Python), test case pass/fail verification, custom input runner, stdout/stderr console.
+- [ ] **Phase 4 (Active):** UI Redesign — Gen-Z professional dark theme (Linear × Vercel × Raycast aesthetic), resizable split pane, ARIA accessibility (WCAG 2.1 AA), skeleton loaders, custom Monaco theme.
+- [ ] **Phase 5:** Cloud Deployment (Neon/Supabase DB, Render API, Vercel Client).
