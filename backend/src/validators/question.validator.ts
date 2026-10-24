@@ -51,7 +51,18 @@ export const questionIdParamSchema = z.object({
   id: z.string().uuid('Question ID must be a valid UUID'),
 });
 
+export const bulkCreateTestCaseSchema = z.object({
+  testCases: z.array(testCaseInputSchema).min(1, 'At least one test case must be provided'),
+});
+
+export const testCaseParamSchema = z.object({
+  id: z.string().uuid('Question ID must be a valid UUID'),
+  testCaseId: z.string().uuid('TestCase ID must be a valid UUID'),
+});
+
 export type CreateQuestionInput = z.infer<typeof createQuestionSchema>;
 export type UpdateQuestionInput = z.infer<typeof updateQuestionSchema>;
 export type QueryQuestionInput = z.infer<typeof queryQuestionSchema>;
 export type QuestionIdParam = z.infer<typeof questionIdParamSchema>;
+export type BulkCreateTestCaseInput = z.infer<typeof bulkCreateTestCaseSchema>;
+export type TestCaseInput = z.infer<typeof testCaseInputSchema>;

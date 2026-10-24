@@ -158,6 +158,68 @@ export class QuestionService {
       where: { id },
     });
   }
+
+  /**
+   * Add a single test case to an existing question
+   */
+  async addTestCase(questionId: string, testCase: { input: string; expectedOutput: string }) {
+    const question = await prisma.question.findUnique({ where: { id: questionId } });
+    if (!question) return null;
+
+    return prisma.testCase.create({
+      data: {
+        questionId,
+        input: testCase.input,
+        expectedOutput: testCase.expectedOutput,
+      },
+    });
+  }
+
+  /**
+   * Add multiple test cases in bulk to an existing question
+   */
+  async addTestCasesBulk(questionId: string, testCases: { input: string; expectedOutput: string }[]) {
+    const question = await prisma.question.findUnique({ where: { id: questionId } });
+    if (!question) return null;
+
+    return prisma.$transaction(
+      testCases.map((tc) =>
+        prisma.testCase.create({
+          data: {
+            questionId,
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+          },
+        })
+      )
+    );
+  }
+
+  /**
+   * Fetch all test cases for a question
+   */
+  async getTestCases(questionId: string) {
+    const question = await prisma.question.findUnique({ where: { id: questionId } });
+    if (!question) return null;
+
+    return prisma.testCase.findMany({
+      where: { questionId },
+    });
+  }
+
+  /**
+   * Delete a specific test case from a question
+   */
+  async deleteTestCase(questionId: string, testCaseId: string) {
+    const testCase = await prisma.testCase.findFirst({
+      where: { id: testCaseId, questionId },
+    });
+    if (!testCase) return null;
+
+    return prisma.testCase.delete({
+      where: { id: testCaseId },
+    });
+  }
 }
 
 export const questionService = new QuestionService();

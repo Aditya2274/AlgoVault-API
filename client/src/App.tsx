@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Question, Difficulty, Pagination, HealthResponse, ApiResponse } from './types';
+import CodeWorkspace from './components/CodeWorkspace';
 import { 
   Code2, 
   Search, 
@@ -245,82 +246,53 @@ export default function App() {
           </div>
         </section>
 
-        {/* Right Column: Problem Detail & Test Cases */}
+        {/* Right Column: Problem Detail, Interactive Monaco Editor & Test Runner */}
         <section className="lg:col-span-7 flex flex-col gap-4">
           {selectedQuestion ? (
-            <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 flex flex-col gap-6">
-              {/* Header */}
-              <div className="flex items-start justify-between border-b border-slate-800 pb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${getDifficultyBadge(selectedQuestion.difficulty)}`}>
-                      {selectedQuestion.difficulty}
-                    </span>
-                    <span className="text-xs text-slate-500 font-mono">ID: {selectedQuestion.id.slice(0, 8)}...</span>
+            <div className="flex flex-col gap-4">
+              {/* Problem Overview Card */}
+              <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 flex flex-col gap-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${getDifficultyBadge(selectedQuestion.difficulty)}`}>
+                        {selectedQuestion.difficulty}
+                      </span>
+                      <span className="text-xs text-slate-500 font-mono">ID: {selectedQuestion.id.slice(0, 8)}...</span>
+                    </div>
+                    <h2 className="text-xl font-bold text-white">{selectedQuestion.title}</h2>
                   </div>
-                  <h2 className="text-2xl font-bold text-white">{selectedQuestion.title}</h2>
                 </div>
-              </div>
 
-              {/* Description */}
-              <div className="prose prose-invert max-w-none">
-                <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Problem Statement</h4>
-                <div className="bg-slate-950/60 p-4 rounded-lg border border-slate-800 text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                {/* Problem Statement */}
+                <div className="bg-slate-950/60 p-3.5 rounded-lg border border-slate-800 text-slate-300 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
                   {selectedQuestion.description}
                 </div>
-              </div>
 
-              {/* Tags */}
-              <div>
-                <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">Categorization Tags</h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedQuestion.tags.map((tag) => (
-                    <span key={tag} className="text-xs px-2.5 py-1 rounded-md bg-slate-800 border border-slate-700/60 text-slate-300">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Test Cases */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+                {/* Tags & Test Cases Info */}
+                <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-slate-800/60">
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedQuestion.tags.map((tag) => (
+                      <span key={tag} className="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/50">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                  <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
                     <Terminal className="w-3.5 h-3.5 text-indigo-400" />
-                    Validation Test Cases ({selectedQuestion.testCases?.length || 0})
-                  </h4>
-                </div>
-                <div className="flex flex-col gap-3">
-                  {selectedQuestion.testCases && selectedQuestion.testCases.length > 0 ? (
-                    selectedQuestion.testCases.map((tc, idx) => (
-                      <div key={tc.id || idx} className="bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs">
-                        <div className="flex items-center justify-between text-slate-500 mb-2 border-b border-slate-800/80 pb-1">
-                          <span>Case #{idx + 1}</span>
-                          <span className="text-[10px]">ID: {tc.id?.slice(0, 8)}</span>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <span className="text-slate-400 text-[11px] block mb-1">Input:</span>
-                            <pre className="bg-slate-900/80 p-2 rounded text-emerald-300 overflow-x-auto">{tc.input}</pre>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 text-[11px] block mb-1">Expected Output:</span>
-                            <pre className="bg-slate-900/80 p-2 rounded text-amber-300 overflow-x-auto">{tc.expectedOutput}</pre>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-slate-500">No test cases registered for this problem yet.</p>
-                  )}
+                    {selectedQuestion.testCases?.length || 0} validation cases
+                  </span>
                 </div>
               </div>
+
+              {/* In-Browser Interactive Monaco Code Editor & Test Runner Console */}
+              <CodeWorkspace question={selectedQuestion} />
             </div>
           ) : (
             <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-12 text-center text-slate-500 flex flex-col items-center justify-center h-full">
               <Database className="w-12 h-12 mb-3 text-slate-600" />
               <p className="text-base font-medium">Select a challenge from the list</p>
-              <p className="text-xs text-slate-600 mt-1">View description, tags, and validation test cases</p>
+              <p className="text-xs text-slate-600 mt-1">Write code in Monaco Editor, run test cases, and verify output</p>
             </div>
           )}
         </section>

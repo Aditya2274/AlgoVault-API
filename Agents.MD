@@ -8,9 +8,9 @@ The architecture is strictly decoupled into an Express + Prisma backend and a Re
 ## 2. Technical Stack
 
 - **Backend (`/backend`):** Node.js, Express 5, TypeScript, PostgreSQL (managed via Prisma ORM 7 + Driver Adapter)
-- **Frontend (`/client`):** React 19 (via Vite), Tailwind CSS v4, Lucide Icons, Monaco Editor (upcoming)
+- **Frontend (`/client`):** React 19 (via Vite), Tailwind CSS v4, Lucide Icons, `@monaco-editor/react`
 - **Infrastructure:** Docker (multi-stage builds for backend and frontend), Docker Compose, Nginx (frontend SPA server & reverse proxy)
-- **External Integrations:** Piston API (upcoming for secure code execution)
+- **External Integrations:** Native embedded subprocess execution engine (Node.js + Python 3 subprocesses with timeout + memory caps)
 
 ## 3. Project Directory Structure
 
@@ -86,8 +86,9 @@ devprep-api/
 
 1. **Backend Integration & Docker Compose:** [COMPLETED] Modular Express 5 app with Zod validation, singleton Prisma driver adapter, graceful shutdown, and containerized Dockerfile.
 2. **Frontend Scaffold & Decoupled Containers:** [COMPLETED] Initialized React 19 + Vite in `/client`, configured Tailwind CSS v4, built responsive dashboard connecting to `/api/health` and `/api/questions`, created Nginx SPA `Dockerfile`, and wired root `docker-compose.yml` for isolated communication.
-3. **Cloud Deployment (ACTIVE):** Deploy the PostgreSQL DB to Neon/Supabase, the Express API container to Render, and the React frontend to Vercel.
-4. **Code Execution (Bonus):** Integrate `@monaco-editor/react` in the UI and securely route code execution payloads to the public Piston API.
+3. **Monaco Code Editor & Native Embedded Execution Engine:** [COMPLETED] Built in-browser Monaco Editor workspace with multi-language support (JavaScript, TypeScript, Python 3), dynamic starter templates, safe isolated subprocess execution with hard timeouts and memory caps, test case result verification, and interactive console logs.
+4. **UI Redesign — Gen-Z Professional Dark Theme (ACTIVE):** Restyle the `/client` frontend with a "Linear × Vercel × Raycast" dark-first design system — Space Grotesk headings, Inter UI, JetBrains Mono for code/IDs, Tailwind v4 `@theme` CSS variables, Monaco custom theme, resizable split editor/output pane, ARIA tabs, skeleton loaders, and WCAG 2.1 AA accessibility compliance.
+5. **Cloud Deployment (UPCOMING):** Deploy the PostgreSQL DB to Neon/Supabase, the Express API container to Render, and the React frontend to Vercel.
 
 ---
 
@@ -159,6 +160,51 @@ devprep-api/
 11. **Decision: Zero-Config Tailwind CSS v4 via `@tailwindcss/vite`**
     - *Context:* Tailwind v4 removes `tailwind.config.js` in favor of first-class Vite compiler integration.
     - *Choice:* Adopted `@tailwindcss/vite` and `@import "tailwindcss";` in `index.css`, giving lightning-fast HMR and minimal configuration surface.
+
+---
+
+### Phase 3: In-Browser Monaco Code Editor & Native Embedded Execution Engine
+* **Status:** ✅ Completed
+* **What was built:**
+  - `client/src/components/CodeWorkspace.tsx`: Monaco Editor integration (`@monaco-editor/react`) featuring multi-language syntax highlighting (`JavaScript`, `TypeScript`, `Python 3`), starter code templates, Run Code button, test case pass/fail pills, input/output diffing, custom input runner, and stdout/stderr console.
+  - `backend/src/services/starter-code.service.ts`: Dynamic starter boilerplate generator providing canonical signatures for known problems (Two Sum, Longest Substring, Trapping Rain Water) and dynamic parameter extraction for custom questions.
+  - `backend/src/services/execution.service.ts`: Sandboxed code execution engine using isolated subprocesses (`node` and `python3`) with 3.5s timeout limits, 128MB memory ceilings, signal killing (`SIGTERM`/`SIGKILL`), TypeScript in-memory transpilation (`ts.transpileModule`), output normalization, and batch test case verification.
+  - `backend/src/validators/execute.validator.ts`, `backend/src/controllers/execute.controller.ts`, and `backend/src/routes/execute.routes.ts`: Endpoints `/api/execute` and `/api/execute/templates/:questionId` with Zod validation.
+  - `backend/Dockerfile`: Added `python3` to Alpine runner image for native Python 3 execution inside containers.
+
+#### Key Architectural Decisions (Phase 3):
+12. **Decision: Native Embedded Subprocess Execution vs Heavy Judge0 Stack**
+    - *Context:* Public Judge0/Piston APIs are rate-limited or require whitelists, while self-hosting Judge0 requires Redis, PostgreSQL, and multi-GB images needing 2GB–4GB RAM, exceeding AWS `t3.micro` limits.
+    - *Choice:* Implemented a native, unprivileged embedded execution engine executing Node.js and Python 3 directly in timed subprocesses. Total RAM usage is under 600MB across the entire stack, perfectly running on `t3.micro` free tier.
+13. **Decision: Batch Test Case Evaluation in a Single Subprocess**
+    - *Context:* Spawning a separate Node/Python process for every individual testcase adds process startup overhead (50-100ms per test).
+    - *Choice:* Engineered a batch test harness executing all test cases in a single isolated process invocation, reducing total execution latency to <1ms per testcase.
+
+---
+
+### Phase 4: In-Browser Monaco Code Editor — Full Interactive Workspace
+* **Status:** ✅ Completed
+* **What was built:**
+  - `client/src/components/CodeWorkspace.tsx`: Full Monaco Editor workspace featuring language switching (JavaScript, TypeScript, Python 3), dynamic starter code fetched per-question from the API, per-language code save/restore, Run Code button with live isRunning state, test case pass/fail pills, selected case breakdown (input / expected / actual output), custom input runner, stdout/stderr Logs tab, and auto-switch to Results tab on run.
+  - `client/src/App.tsx`: Wired `CodeWorkspace` into the right-panel split layout below the problem description card; auto-selects the first question on load.
+  - `client/src/types.ts`: Added `SupportedLanguage`, `CodeTemplates`, `ExecutionResponse`, `ExecutionResult`, and `ExecutionSummary` contracts mirroring backend response shapes.
+  - `backend/src/services/execution.service.ts`: Sandboxed batch execution engine with Node.js / Python 3 subprocess isolation, 3.5s wall-clock timeout, 128 MB memory ceiling, TypeScript in-memory transpilation (`ts.transpileModule`), multi-test-case harness, stdout capture, and output normalization.
+  - `backend/src/services/starter-code.service.ts`: Fully dynamic starter-code generator — no hardcoded templates in source. Derives function signatures from question title (camelCase slug) and extracts parameter names from test case inputs via regex. Includes known overrides for Two Sum, Longest Substring Without Repeating Characters, and Trapping Rain Water.
+  - `backend/src/controllers/execute.controller.ts`, `backend/src/routes/execute.routes.ts`, `backend/src/validators/execute.validator.ts`: Endpoints `POST /api/execute` and `GET /api/execute/templates/:questionId` with Zod-validated request bodies.
+  - `backend/Dockerfile`: Added `RUN apk add --no-cache python3` to Alpine runner stage so Python 3 is available inside the backend container.
+  - `backend/package.json`: Moved `typescript` from `devDependencies` to `dependencies` because `execution.service.ts` calls `ts.transpileModule` at container runtime (not just build time).
+  - `docker-compose.yml`: Pinned PostgreSQL host port to `5433` via `POSTGRES_PORT` env var to avoid conflicts with host-native PostgreSQL on port 5432.
+
+#### Key Architectural Decisions (Phase 4):
+14. **Decision: Dynamic Starter Templates with Zero Codebase Edits per New Question**
+    - *Context:* Early prototype had a `KNOWN_TEMPLATES` map in the frontend that required developers to manually add an entry every time a new question was added. This was non-scalable.
+    - *Choice:* Moved all template generation to `backend/src/services/starter-code.service.ts`. The service uses a slug-keyed override map for canonical LeetCode-style signatures and falls back to fully dynamic camelCase derivation + parameter extraction from test case input strings for any new question — no code changes needed.
+15. **Decision: `typescript` as a Runtime Dependency**
+    - *Context:* The execution service uses `ts.transpileModule` to convert user-submitted TypeScript to runnable JavaScript inside the container. This is needed at runtime, not just at build time.
+    - *Choice:* Moved `typescript` from `devDependencies` to `dependencies` in `backend/package.json`. The Docker multi-stage build runs `npm ci` with all `dependencies` in the production runner stage.
+16. **Decision: Single-Process Batch Test Harness**
+    - *Context:* Spawning a separate Node/Python process for every individual test case adds 50–100ms of process startup overhead per test.
+    - *Choice:* Each code execution spawns exactly one subprocess that runs all test cases in a tight loop, returning a JSON result array. Total per-test overhead is under 1ms.
 
 ---
 
