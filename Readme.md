@@ -1,151 +1,175 @@
-# AlgoVault API
+# AlgoVault
 
-AlgoVault API is a strongly-typed RESTful backend engine designed to manage and serve algorithmic coding challenges, execution test cases, and technical interview materials. Built with a focus on strict data integrity and scalable architecture, it acts as the foundational data layer for a developer preparation platform.
+AlgoVault is a strongly-typed, full-stack developer preparation platform designed to manage and serve algorithmic coding challenges, execution test cases, and technical interview materials.
 
-## Tech Stack
-
-* **Runtime:** Node.js
-* **Framework:** Express.js
-* **Language:** TypeScript
-* **Database:** PostgreSQL
-* **ORM:** Prisma
-* **Containerization:** Docker
-
-## Features
-
-* **End-to-End Type Safety:** Strict TypeScript interfaces paired with Prisma's auto-generated types ensure data structures are enforced from the request payload down to the database schema.
-* **Relational Data Modeling:** One-to-many relationships (Questions to Test Cases) managed efficiently via PostgreSQL.
-* **Transactional Writes:** Uses Prisma's nested writes to save complex, related data structures in a single database transaction.
-* **Production-Ready:** Multi-stage Dockerfile for optimized, lightweight production builds.
+The project is structured with strict separation of concerns into a dedicated backend API service (`/backend`) and a modern React frontend Single Page Application (`/client`), fully containerized and orchestrated via Docker Compose.
 
 ---
 
-## Getting Started
+## Architecture Overview
 
-### Prerequisites
+```text
+devprep-api/
+├── backend/                  # Node.js + Express 5 + Prisma 7 + PostgreSQL REST API
+│   ├── src/                  # Layered controllers, services, routes, middleware, validators
+│   ├── prisma/               # Database schema & migrations
+│   ├── Dockerfile            # Multi-stage production container (Node 20 Alpine)
+│   └── package.json
+├── client/                   # React 19 + Vite + Tailwind CSS v4 Single Page App
+│   ├── src/                  # Problem dashboard, test case viewer, type contracts
+│   ├── Dockerfile            # Multi-stage production container (Node build -> Nginx Alpine)
+│   ├── nginx.conf            # SPA routing + /api reverse proxy to backend
+│   └── package.json
+└── docker-compose.yml        # Orchestrates db (PostgreSQL), backend, and client
+```
 
-Ensure you have the following installed on your local machine:
-* [Node.js](https://nodejs.org/) (v18 or higher)
-* [PostgreSQL](https://www.postgresql.org/)
-* [Docker](https://www.docker.com/) (Optional, for containerized execution)
+---
 
-### Local Development Setup
+## Tech Stack
 
-1. **Clone the repository:**
+- **Backend:** Node.js, Express 5, TypeScript, PostgreSQL, Prisma ORM 7 with PostgreSQL Driver Adapter, Zod 3
+- **Frontend:** React 19, Vite, TypeScript, Tailwind CSS v4, Lucide Icons
+- **Infrastructure:** Docker, Docker Compose, Nginx (Alpine)
+
+---
+
+## Quickstart with Docker Compose
+
+Run the entire ecosystem (Database, API, and Frontend) with a single command:
+
+```bash
+docker compose up -d
+```
+
+Once running:
+- **Frontend Dashboard:** [http://localhost:5173](http://localhost:5173) (served by Nginx, reverse-proxying `/api` to the backend)
+- **Backend API:** [http://localhost:3000/api/health](http://localhost:3000/api/health)
+- **PostgreSQL Database:** `localhost:5432`
+
+To shut down the containers:
+```bash
+docker compose down
+```
+
+---
+
+## Local Development Setup
+
+### 1. Backend Setup (`/backend`)
+
+1. Navigate to the backend directory and install dependencies:
    ```bash
-   git clone https://github.com/yourusername/algovault-api.git
-   cd algovault-api
-   ```
-
-2. **Install dependencies:**
-   ```bash
+   cd backend
    npm install
    ```
 
-3. **Configure Environment Variables:**
-   Create a `.env` file in the root directory and add your PostgreSQL connection string:
+2. Configure environment variables:
+   Create a `.env` file in `backend/` (or copy from `.env.example`):
    ```env
    PORT=3000
    DATABASE_URL="postgresql://postgres:yourpassword@localhost:5432/devprep?schema=public"
    ```
 
-4. **Run Database Migrations:**
-   This command creates the necessary tables in your PostgreSQL database and generates the Prisma Client.
+3. Run migrations and generate Prisma Client:
    ```bash
-   npx prisma migrate dev --name init
+   npx prisma migrate dev
    ```
 
-5. **Start the Development Server:**
+4. Start the backend development server:
    ```bash
    npm run dev
    ```
-   The server will start on `http://localhost:3000`.
+   The backend API will run at `http://localhost:3000`.
+
+---
+
+### 2. Frontend Setup (`/client`)
+
+1. Navigate to the client directory and install dependencies:
+   ```bash
+   cd client
+   npm install
+   ```
+
+2. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+   The frontend will run at `http://localhost:5173` with automatic API proxying to `http://localhost:3000/api`.
 
 ---
 
 ## API Reference
 
 ### 1. Health Check
-Check if the API is running correctly.
-* **URL:** `/api/health`
-* **Method:** `GET`
+* **Endpoint:** `GET /api/health`
 * **Response:**
   ```json
   {
     "status": "success",
     "message": "DevPrep API is running smoothly.",
-    "timeStamp": "2026-10-15T12:00:00.000Z"
+    "timeStamp": "2026-10-24T17:30:30.621Z"
   }
   ```
 
-### 2. Get All Questions
-Retrieve all coding problems and their associated test cases.
-* **URL:** `/api/questions`
-* **Method:** `GET`
+### 2. Get Questions (with Pagination, Filter, & Search)
+* **Endpoint:** `GET /api/questions?difficulty=Easy&search=Sum&page=1&limit=20`
 * **Response:**
   ```json
   {
     "status": "success",
     "data": [
       {
-        "id": "uuid-string",
+        "id": "1154288c-9777-4b4f-841b-2403f6acb4ec",
         "title": "Two Sum",
-        "description": "Given an array of integers...",
+        "description": "Given an array of integers nums and an integer target...",
         "difficulty": "Easy",
         "tags": ["arrays", "hash map"],
-        "createdAt": "2026-10-15T...",
-        "updatedAt": "2026-10-15T...",
+        "createdAt": "2026-10-15T13:43:58.152Z",
+        "updatedAt": "2026-10-15T13:43:58.152Z",
         "testCases": [
           {
-            "id": "uuid-string",
+            "id": "b01e5ace-0404-48de-9163-3cb4d4f890dc",
             "input": "[2,7,11,15], 9",
             "expectedOutput": "[0,1]",
-            "questionId": "uuid-string"
+            "questionId": "1154288c-9777-4b4f-841b-2403f6acb4ec"
           }
         ]
       }
-    ]
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1,
+      "hasNextPage": false,
+      "hasPrevPage": false
+    }
   }
   ```
 
 ### 3. Create a Question
-Add a new coding problem along with its test cases in a single request.
-* **URL:** `/api/questions`
-* **Method:** `POST`
+* **Endpoint:** `POST /api/questions`
 * **Headers:** `Content-Type: application/json`
 * **Body:**
   ```json
   {
-    "title": "Two Sum",
-    "description": "Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
+    "title": "Valid Palindrome",
+    "description": "Given a string s, return true if it is a palindrome, or false otherwise.",
     "difficulty": "Easy",
-    "tags": ["arrays", "hash map"],
+    "tags": ["strings", "two-pointers"],
     "testCases": [
       {
-        "input": "[2,7,11,15], 9",
-        "expectedOutput": "[0,1]"
+        "input": "\"A man, a plan, a canal: Panama\"",
+        "expectedOutput": "true"
       }
     ]
   }
   ```
 
----
+### 4. Update a Question
+* **Endpoint:** `PUT /api/questions/:id`
+* **Headers:** `Content-Type: application/json`
 
-## Docker Deployment
-
-To run AlgoVault API in an isolated container environment:
-
-1. **Build the Docker Image:**
-   ```bash
-   docker build -t algovault-api .
-   ```
-
-2. **Run the Container:**
-   *(Note: `--network host` is used here assuming a local PostgreSQL installation on Linux. Adjust networking as needed for Mac/Windows or cloud databases).*
-   ```bash
-   docker run -d \
-     --name algovault-backend \
-     --network host \
-     -e DATABASE_URL="postgresql://postgres:yourpassword@127.0.0.1:5432/devprep?schema=public" \
-     algovault-api
-   ```
+### 5. Delete a Question
+* **Endpoint:** `DELETE /api/questions/:id`

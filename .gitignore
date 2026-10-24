@@ -1,6 +1,19 @@
-node_modules
-dist
-# Keep environment variables out of version control
-.env
+# Dependencies
+node_modules/
+**/node_modules/
 
+# Production builds
+dist/
+**/dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
+*.env
+backend/.env
+client/.env
+
+# Prisma generated artifacts
 /src/generated/prisma
+backend/src/generated/prisma
