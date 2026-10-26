@@ -170,7 +170,7 @@ export default function CodeWorkspace({ question }: CodeWorkspaceProps) {
   const selectedCaseResult = executionResult?.results?.[selectedCaseIdx];
 
   return (
-    <div className="flex flex-col h-full bg-slate-900/60 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
+    <div className="flex flex-col h-full bg-slate-900/60 border-0 lg:border-0 overflow-hidden shadow-xl">
       {/* Top Action & Language Toolbar */}
       <div className="px-4 py-2.5 bg-slate-950/80 border-b border-slate-800/80 flex items-center justify-between gap-3">
         {/* Language selector */}
@@ -191,9 +191,10 @@ export default function CodeWorkspace({ question }: CodeWorkspaceProps) {
           <button
             onClick={handleResetCode}
             title="Reset code to default template"
-            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition"
+            aria-label="Reset code to default template"
+            className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
 
@@ -211,7 +212,7 @@ export default function CodeWorkspace({ question }: CodeWorkspaceProps) {
       </div>
 
       {/* Code Editor Pane */}
-      <div className="h-[360px] w-full bg-[#1e1e1e] relative">
+      <div className="flex-1 min-h-[260px] w-full bg-[#1e1e1e] relative">
         <Editor
           height="100%"
           language={getMonacoLanguage(language)}
