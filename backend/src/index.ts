@@ -1,11 +1,19 @@
 import 'dotenv/config';
 import app from './app.js';
 import { pool, prisma } from './config/prisma.js';
+import { bootstrapTeacher } from './config/bootstrap.js';
+import { initSocketServer } from './realtime/socket.js';
 
 const PORT = process.env.PORT || 3000;
 
 const server = app.listen(PORT, () => {
   console.log(`🚀 AlgoVault API server running at http://localhost:${PORT}`);
+});
+
+initSocketServer(server);
+
+bootstrapTeacher().catch((err) => {
+  console.error('Teacher bootstrap failed:', err);
 });
 
 const gracefulShutdown = async (signal: string) => {

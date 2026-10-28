@@ -12,6 +12,39 @@ enum Difficulty {
   Hard
 }
 
+enum Role {
+  Teacher
+  Student
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  name               String
+  email              String   @unique
+  passwordHash       String
+  role               Role     @default(Student)
+  cohortId           String?
+  cohort             Cohort?  @relation("CohortStudents", fields: [cohortId], references: [id])
+  taughtCohort       Cohort?  @relation("CohortTeacher")
+  sessions           ClassSession[] @relation("TeacherSessions")
+  messages           ChatMessage[]
+  completedQuestions String[] @default([])
+  totalScore         Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Cohort {
+  id        String   @id @default(uuid())
+  name      String
+  teacherId String   @unique
+  teacher   User     @relation("CohortTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  students  User[]   @relation("CohortStudents")
+  sessions  ClassSession[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Question {
   id          String     @id @default(uuid())
   title       String
@@ -22,6 +55,7 @@ model Question {
   updatedAt   DateTime   @updatedAt
 
   testCases   TestCase[] 
+  sessions    ClassSession[]
 }
 
 model TestCase {
@@ -31,4 +65,30 @@ model TestCase {
   
   questionId     String
   question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model ClassSession {
+  id         String        @id @default(uuid())
+  title      String
+  cohortId   String
+  cohort     Cohort        @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  questionId String?
+  question   Question?     @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  teacherId  String
+  teacher    User          @relation("TeacherSessions", fields: [teacherId], references: [id], onDelete: Cascade)
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  messages   ChatMessage[]
+}
+
+model ChatMessage {
+  id        String       @id @default(uuid())
+  body      String
+  sessionId String
+  session   ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
 }
