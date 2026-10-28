@@ -1,5 +1,6 @@
 import express from 'express';
 import type { Application } from 'express';
+import cookieParser from 'cookie-parser';
 import apiRoutes from './routes/index.js';
 import { notFoundHandler, errorHandler } from './middleware/error.middleware.js';
 
@@ -9,6 +10,7 @@ export const createApp = (): Application => {
   // Core middlewares
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+  app.use(cookieParser());
 
   // API Routes
   app.use('/api', apiRoutes);

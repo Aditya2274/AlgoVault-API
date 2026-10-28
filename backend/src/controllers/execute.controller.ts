@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { executeCode } from '../services/execution.service.js';
 import { getStarterTemplates } from '../services/starter-code.service.js';
 import questionService from '../services/question.service.js';
+import progressService from '../services/progress.service.js';
 import type { ExecuteInput } from '../validators/execute.validator.js';
 
 export async function executeCodeHandler(
@@ -17,6 +18,11 @@ export async function executeCodeHandler(
       code,
       customInput,
     });
+
+    // Record progress for students who pass all test cases (idempotent).
+    if (req.user?.role === 'Student' && executionResult.summary.allPassed) {
+      await progressService.recordCompletion(req.user.id, questionId);
+    }
 
     res.status(200).json({
       status: 'success',

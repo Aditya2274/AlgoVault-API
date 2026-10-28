@@ -29,6 +29,9 @@ services:
       NODE_ENV: production
       PORT: 3000
       DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-devprep}?schema=public"
+      JWT_SECRET: ${JWT_SECRET:-change-me-dev-secret-please}
+      SEED_TEACHER_EMAIL: ${SEED_TEACHER_EMAIL:-teacher@algovault.dev}
+      SEED_TEACHER_PASSWORD: ${SEED_TEACHER_PASSWORD:-teacher123}
     depends_on:
       db:
         condition: service_healthy

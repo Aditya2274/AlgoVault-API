@@ -75,3 +75,49 @@ export interface ExecutionResponse {
   summary: ExecutionSummary;
   results: TestCaseResult[];
 }
+
+export type Role = 'Teacher' | 'Student';
+
+export interface SafeUser {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  cohortId: string | null;
+  completedQuestions: string[];
+  totalScore: number;
+}
+
+export interface RosterStudent {
+  id: string;
+  name: string;
+  email: string;
+  completedCount: number;
+  completedQuestions: string[];
+  totalScore: number;
+}
+
+export interface SessionUser {
+  id: string;
+  name: string;
+  role?: Role;
+}
+
+export interface SessionMessage {
+  id: string;
+  body: string;
+  createdAt: string;
+  user: SessionUser;
+}
+
+export interface ClassSession {
+  id: string;
+  title: string;
+  isActive: boolean;
+  cohortId?: string;
+  questionId?: string | null;
+  question?: { id: string; title: string; difficulty: Difficulty } | null;
+  teacher?: SessionUser;
+  createdAt: string;
+  messages?: SessionMessage[];
+}
